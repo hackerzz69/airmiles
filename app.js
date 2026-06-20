@@ -1,4 +1,4 @@
-// Love's Air Mile Radius Pro
+// Love's Air Mile Radius Pro - Travel Stops Only
 
 const METERS_PER_MILE = 1609.344;
 
@@ -18,7 +18,10 @@ map = L.map("map", { zoomControl: true }).setView([39.8283, -98.5795], 4);
 
 const roadMap = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  { maxZoom: 19, attribution: "&copy; OpenStreetMap" }
+  {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }
 );
 
 const satelliteBase = L.tileLayer(
@@ -36,6 +39,13 @@ const satelliteMap = L.layerGroup([
 
 roadMap.addTo(map);
 
+const lovesIcon = L.icon({
+  iconUrl: "./images/loves.png",
+  iconSize: [42, 42],
+  iconAnchor: [21, 42],
+  popupAnchor: [0, -35]
+});
+
 const lovesLayer = L.layerGroup().addTo(map);
 
 L.control.layers(
@@ -44,7 +54,7 @@ L.control.layers(
     "Satellite": satelliteMap
   },
   {
-    "Love's": lovesLayer
+    "Love's Travel Stops": lovesLayer
   }
 ).addTo(map);
 
@@ -80,7 +90,20 @@ async function loadLoves(centerLat, centerLng, radiusMeters) {
   const response = await fetch("./data/loves_locations_lite.json");
   const stores = await response.json();
 
+  let count = 0;
+
   stores.forEach(store => {
+
+    const storeType =
+      store.StoreType ||
+      store.storeType ||
+      store.type ||
+      "";
+
+    if (!String(storeType).includes("Travel")) {
+      return;
+    }
+
     if (
       centerLat &&
       centerLng &&
@@ -91,23 +114,34 @@ async function loadLoves(centerLat, centerLng, radiusMeters) {
         [store.lat, store.lng]
       );
 
-      if (distance > radiusMeters) return;
+      if (distance > radiusMeters) {
+        return;
+      }
     }
 
-    L.marker([store.lat, store.lng])
+    count++;
+
+    L.marker(
+      [store.lat, store.lng],
+      { icon: lovesIcon }
+    )
       .bindPopup(`
-        <div>
+        <div style="min-width:220px">
           <b>${store.city}, ${store.state}</b><br>
           ${store.address || ""}<br>
-          Store #${store.id || ""}
+          Store #${store.id || ""}<br>
+          ${storeType}
         </div>
       `)
       .addTo(lovesLayer);
   });
+
+  console.log(`Loaded ${count} Love's Travel Stops`);
 }
 
 async function drawRadius(lat, lng) {
-  const radiusMeters = getRadiusMiles() * METERS_PER_MILE;
+  const radiusMeters =
+    getRadiusMiles() * METERS_PER_MILE;
 
   if (centerMarker) map.removeLayer(centerMarker);
   if (radiusCircle) map.removeLayer(radiusCircle);
@@ -123,19 +157,30 @@ async function drawRadius(lat, lng) {
     dashArray: "12 10"
   }).addTo(map);
 
-  centerCoords.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  radiusDisplay.textContent = `${getRadiusMiles()} Miles`;
+  centerCoords.textContent =
+    `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+  radiusDisplay.textContent =
+    `${getRadiusMiles()} Miles`;
 
   updateDistance(lat, lng);
 
-  await loadLoves(lat, lng, radiusMeters);
+  await loadLoves(
+    lat,
+    lng,
+    radiusMeters
+  );
 }
 
 function locateUser() {
   navigator.geolocation.getCurrentPosition(
     async position => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
+
+      const lat =
+        position.coords.latitude;
+
+      const lng =
+        position.coords.longitude;
 
       userLocation = { lat, lng };
 
@@ -143,10 +188,13 @@ function locateUser() {
 
       await drawRadius(lat, lng);
 
-      locateBtn.textContent = "📍 My Location";
+      locateBtn.textContent =
+        "📍 My Location";
     },
     () => {
-      alert("Unable to get GPS location.");
+      alert(
+        "Unable to get GPS location."
+      );
     },
     {
       enableHighAccuracy: true,
@@ -157,31 +205,66 @@ function locateUser() {
 }
 
 map.on("click", e => {
-  drawRadius(e.latlng.lat, e.latlng.lng);
+  drawRadius(
+    e.latlng.lat,
+    e.latlng.lng
+  );
 });
 
-radiusSelect.addEventListener("change", () => {
-  customRadius.hidden = radiusSelect.value !== "custom";
+radiusSelect.addEventListener(
+  "change",
+  () => {
 
-  if (!centerMarker) return;
+    customRadius.hidden =
+      radiusSelect.value !== "custom";
 
-  const pos = centerMarker.getLatLng();
-  drawRadius(pos.lat, pos.lng);
-});
+    if (!centerMarker) return;
 
-customRadius.addEventListener("input", () => {
-  if (!centerMarker || radiusSelect.value !== "custom") return;
+    const pos =
+      centerMarker.getLatLng();
 
-  const pos = centerMarker.getLatLng();
-  drawRadius(pos.lat, pos.lng);
-});
+    drawRadius(
+      pos.lat,
+      pos.lng
+    );
+  }
+);
 
-locateBtn.addEventListener("click", locateUser);
+customRadius.addEventListener(
+  "input",
+  () => {
+
+    if (
+      !centerMarker ||
+      radiusSelect.value !== "custom"
+    ) {
+      return;
+    }
+
+    const pos =
+      centerMarker.getLatLng();
+
+    drawRadius(
+      pos.lat,
+      pos.lng
+    );
+  }
+);
+
+locateBtn.addEventListener(
+  "click",
+  locateUser
+);
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(console.error);
-  });
+  window.addEventListener(
+    "load",
+    () => {
+      navigator.serviceWorker
+        .register("./sw.js")
+        .catch(console.error);
+    }
+  );
 }
 
 locateUser();
