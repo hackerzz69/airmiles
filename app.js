@@ -1,384 +1,270 @@
-// ================================
 // Air Mile Radius Pro
-// ================================
-
-let map;
-let centerMarker;
-let radiusCircle;
-let userLocation = null;
 
 const METERS_PER_MILE = 1609.344;
 
-const centerCoords =
-    document.getElementById("centerCoords");
+let map;
+let centerMarker = null;
+let radiusCircle = null;
+let userLocation = null;
+let deferredPrompt = null;
 
-const radiusDisplay =
-    document.getElementById("radiusDisplay");
+const centerCoords = document.getElementById("centerCoords");
+const radiusDisplay = document.getElementById("radiusDisplay");
+const distanceDisplay = document.getElementById("distanceDisplay");
+const radiusSelect = document.getElementById("radiusSelect");
+const customRadius = document.getElementById("customRadius");
+const locateBtn = document.getElementById("locateBtn");
 
-const distanceDisplay =
-    document.getElementById("distanceDisplay");
+map = L.map("map", { zoomControl: true }).setView([39.8283, -98.5795], 4);
 
-const radiusSelect =
-    document.getElementById("radiusSelect");
+const roadMap = L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }
+);
 
-const customRadius =
-    document.getElementById("customRadius");
+const satelliteMap = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {
+    attribution: "Esri"
+  }
+);
 
-const locateBtn =
-    document.getElementById("locateBtn");
+roadMap.addTo(map);
 
-// ================================
-// Initialize Map
-// ================================
+const truckStopsLayer = L.layerGroup();
+const restAreasLayer = L.layerGroup();
+const truckParkingLayer = L.layerGroup();
+const walmartLayer = L.layerGroup();
+const weighStationLayer = L.layerGroup();
+const catScaleLayer = L.layerGroup();
 
-map = L.map("map", {
-    zoomControl: true
-}).setView([39.8283, -98.5795], 4);
-
-L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-        maxZoom: 19,
-        attribution:
-            "&copy; OpenStreetMap Contributors"
-    }
+L.control.layers(
+  {
+    "Road Map": roadMap,
+    "Satellite": satelliteMap
+  },
+  {
+    "Truck Stops": truckStopsLayer,
+    "Rest Areas": restAreasLayer,
+    "Truck Parking": truckParkingLayer,
+    "Walmart": walmartLayer,
+    "Weigh Stations": weighStationLayer,
+    "CAT Scales": catScaleLayer
+  }
 ).addTo(map);
 
-// ================================
-// Geocoder Search
-// ================================
+L.Control.geocoder({ defaultMarkGeocode: false })
+  .on("markgeocode", e => {
+    const { lat, lng } = e.geocode.center;
+    drawRadius(lat, lng);
+  })
+  .addTo(map);
 
-L.Control.geocoder({
-    defaultMarkGeocode: false
-})
-.on("markgeocode", function (e) {
-
-    const latlng = e.geocode.center;
-
-    drawRadius(
-        latlng.lat,
-        latlng.lng
-    );
-
-})
-.addTo(map);
-
-// ================================
-// Radius Helpers
-// ================================
-
-function getSelectedRadiusMiles() {
-
-    if (radiusSelect.value === "custom") {
-
-        return (
-            parseFloat(customRadius.value) || 150
-        );
-    }
-
-    return parseFloat(radiusSelect.value);
+function getRadiusMiles() {
+  return radiusSelect.value === "custom"
+    ? parseFloat(customRadius.value) || 150
+    : parseFloat(radiusSelect.value);
 }
-
-function getSelectedRadiusMeters() {
-
-    return (
-        getSelectedRadiusMiles() *
-        METERS_PER_MILE
-    );
-}
-
-// ================================
-// Draw Radius
-// ================================
 
 function drawRadius(lat, lng) {
+  const radiusMeters = getRadiusMiles() * METERS_PER_MILE;
 
-    const radiusMeters =
-        getSelectedRadiusMeters();
+  if (centerMarker) map.removeLayer(centerMarker);
+  if (radiusCircle) map.removeLayer(radiusCircle);
 
-    if (centerMarker) {
-        map.removeLayer(centerMarker);
-    }
+  centerMarker = L.marker([lat, lng]).addTo(map);
 
-    if (radiusCircle) {
-        map.removeLayer(radiusCircle);
-    }
+  radiusCircle = L.circle([lat, lng], {
+    radius: radiusMeters,
+    color: "#3ee9c5",
+    fillColor: "#3ee9c5",
+    fillOpacity: 0.08,
+    weight: 3
+  }).addTo(map);
 
-    centerMarker = L.marker([lat, lng])
-        .addTo(map)
-        .bindPopup(
-            `<b>Radius Center</b><br>${lat.toFixed(6)}, ${lng.toFixed(6)}`
-        );
+  centerCoords.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  radiusDisplay.textContent = `${getRadiusMiles()} Miles`;
 
-    radiusCircle = L.circle(
-        [lat, lng],
-        {
-            radius: radiusMeters,
-            color: "#dc2626",
-            weight: 3,
-            fillColor: "#dc2626",
-            fillOpacity: 0.15
-        }
-    ).addTo(map);
-
-    centerCoords.textContent =
-        `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-    radiusDisplay.textContent =
-        `${getSelectedRadiusMiles()} Miles`;
-
-    map.fitBounds(
-        radiusCircle.getBounds(),
-        {
-            padding: [25, 25]
-        }
-    );
-
-    updateDistance(lat, lng);
+  updateDistance(lat, lng);
 }
 
-// ================================
-// Distance Calculation
-// ================================
+function updateDistance(lat, lng) {
+  if (!userLocation) {
+    distanceDisplay.textContent = "GPS unavailable";
+    return;
+  }
 
-function updateDistance(
-    centerLat,
-    centerLng
-) {
+  const miles =
+    map.distance([lat, lng], [userLocation.lat, userLocation.lng]) /
+    METERS_PER_MILE;
 
-    if (!userLocation) {
-        distanceDisplay.textContent =
-            "GPS unavailable";
-        return;
-    }
-
-    const distanceMeters =
-        map.distance(
-            [centerLat, centerLng],
-            [
-                userLocation.lat,
-                userLocation.lng
-            ]
-        );
-
-    const miles =
-        distanceMeters /
-        METERS_PER_MILE;
-
-    distanceDisplay.textContent =
-        `${miles.toFixed(1)} mi`;
+  distanceDisplay.textContent = `${miles.toFixed(1)} mi`;
 }
-
-// ================================
-// Current Location
-// ================================
 
 function locateUser() {
+  if (!navigator.geolocation) return;
 
-    if (!navigator.geolocation) {
+  locateBtn.textContent = "Locating...";
 
-        alert(
-            "Geolocation not supported."
-        );
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
 
-        return;
+      userLocation = { lat, lng };
+
+      map.setView([lat, lng], 9);
+      drawRadius(lat, lng);
+
+      locateBtn.textContent = "📍 My Location";
+    },
+    () => {
+      locateBtn.textContent = "📍 My Location";
+      alert("Unable to get GPS location.");
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
     }
-
-    locateBtn.textContent =
-        "Locating...";
-
-    navigator.geolocation.getCurrentPosition(
-        function (position) {
-
-            const lat =
-                position.coords.latitude;
-
-            const lng =
-                position.coords.longitude;
-
-            userLocation = {
-                lat,
-                lng
-            };
-
-            map.setView(
-                [lat, lng],
-                9
-            );
-
-            drawRadius(
-                lat,
-                lng
-            );
-
-            locateBtn.textContent =
-                "📍 My Location";
-        },
-
-        function () {
-
-            locateBtn.textContent =
-                "📍 My Location";
-
-            alert(
-                "Unable to get GPS location."
-            );
-        },
-
-        {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
-        }
-    );
+  );
 }
 
-// ================================
-// Radius Selection
-// ================================
+async function overpass(query) {
+  const url =
+    "https://overpass-api.de/api/interpreter?data=" +
+    encodeURIComponent(query);
 
-radiusSelect.addEventListener(
-    "change",
-    () => {
-
-        if (
-            radiusSelect.value ===
-            "custom"
-        ) {
-
-            customRadius.hidden =
-                false;
-
-        } else {
-
-            customRadius.hidden =
-                true;
-        }
-
-        if (centerMarker) {
-
-            const pos =
-                centerMarker.getLatLng();
-
-            drawRadius(
-                pos.lat,
-                pos.lng
-            );
-        }
-    }
-);
-
-customRadius.addEventListener(
-    "input",
-    () => {
-
-        if (
-            centerMarker &&
-            radiusSelect.value ===
-                "custom"
-        ) {
-
-            const pos =
-                centerMarker.getLatLng();
-
-            drawRadius(
-                pos.lat,
-                pos.lng
-            );
-        }
-    }
-);
-
-// ================================
-// Map Click
-// ================================
-
-map.on(
-    "click",
-    function (e) {
-
-        drawRadius(
-            e.latlng.lat,
-            e.latlng.lng
-        );
-    }
-);
-
-// ================================
-// Location Button
-// ================================
-
-locateBtn.addEventListener(
-    "click",
-    locateUser
-);
-
-// ================================
-// PWA Install Prompt
-// ================================
-
-let deferredPrompt;
-
-window.addEventListener(
-    "beforeinstallprompt",
-    (e) => {
-
-        e.preventDefault();
-
-        deferredPrompt = e;
-
-        const installBtn =
-            document.createElement(
-                "button"
-            );
-
-        installBtn.className =
-            "install-btn";
-
-        installBtn.textContent =
-            "⬇ Install App";
-
-        document.body.appendChild(
-            installBtn
-        );
-
-        installBtn.addEventListener(
-            "click",
-            async () => {
-
-                installBtn.remove();
-
-                deferredPrompt.prompt();
-
-                await deferredPrompt.userChoice;
-
-                deferredPrompt = null;
-            }
-        );
-    }
-);
-
-// ================================
-// Service Worker
-// ================================
-
-if (
-    "serviceWorker" in navigator
-) {
-
-    window.addEventListener(
-        "load",
-        () => {
-
-            navigator.serviceWorker
-                .register("./sw.js")
-                .catch(console.error);
-        }
-    );
+  const response = await fetch(url);
+  return await response.json();
 }
 
-// ================================
-// Auto Start
-// ================================
+async function loadTruckStops() {
+  truckStopsLayer.clearLayers();
+
+  const b = map.getBounds();
+
+  const query = `[out:json];
+node["amenity"="fuel"]["hgv"="yes"]
+(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});
+out;`;
+
+  const data = await overpass(query);
+
+  data.elements.forEach(item => {
+    L.marker([item.lat, item.lon])
+      .bindPopup(item.tags?.name || "Truck Stop")
+      .addTo(truckStopsLayer);
+  });
+}
+
+async function loadRestAreas() {
+  restAreasLayer.clearLayers();
+
+  const b = map.getBounds();
+
+  const query = `[out:json];
+node["highway"="rest_area"]
+(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});
+out;`;
+
+  const data = await overpass(query);
+
+  data.elements.forEach(item => {
+    L.marker([item.lat, item.lon])
+      .bindPopup(item.tags?.name || "Rest Area")
+      .addTo(restAreasLayer);
+  });
+}
+
+async function loadTruckParking() {
+  truckParkingLayer.clearLayers();
+
+  const b = map.getBounds();
+
+  const query = `[out:json];
+node["amenity"="parking"]["hgv"="yes"]
+(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});
+out;`;
+
+  const data = await overpass(query);
+
+  data.elements.forEach(item => {
+    L.marker([item.lat, item.lon])
+      .bindPopup(item.tags?.name || "Truck Parking")
+      .addTo(truckParkingLayer);
+  });
+}
+
+async function loadWalmarts() {
+  walmartLayer.clearLayers();
+
+  const b = map.getBounds();
+
+  const query = `[out:json];
+node["brand"="Walmart"]
+(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});
+out;`;
+
+  const data = await overpass(query);
+
+  data.elements.forEach(item => {
+    L.marker([item.lat, item.lon])
+      .bindPopup(item.tags?.name || "Walmart")
+      .addTo(walmartLayer);
+  });
+}
+
+let lastLoad = 0;
+
+map.on("moveend", () => {
+  const now = Date.now();
+
+  if (now - lastLoad < 5000) return;
+
+  lastLoad = now;
+
+  loadTruckStops().catch(console.error);
+  loadRestAreas().catch(console.error);
+  loadTruckParking().catch(console.error);
+  loadWalmarts().catch(console.error);
+});
+
+map.on("click", e => {
+  drawRadius(e.latlng.lat, e.latlng.lng);
+});
+
+radiusSelect.addEventListener("change", () => {
+  customRadius.hidden = radiusSelect.value !== "custom";
+
+  if (!centerMarker) return;
+
+  const pos = centerMarker.getLatLng();
+  drawRadius(pos.lat, pos.lng);
+});
+
+customRadius.addEventListener("input", () => {
+  if (!centerMarker || radiusSelect.value !== "custom") return;
+
+  const pos = centerMarker.getLatLng();
+  drawRadius(pos.lat, pos.lng);
+});
+
+locateBtn.addEventListener("click", locateUser);
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(console.error);
+  });
+}
 
 locateUser();
+
