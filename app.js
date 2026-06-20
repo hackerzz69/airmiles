@@ -1,4 +1,4 @@
-// Air Mile Radius Pro
+// Love's Air Mile Radius Pro
 
 const METERS_PER_MILE = 1609.344;
 
@@ -6,7 +6,6 @@ let map;
 let centerMarker = null;
 let radiusCircle = null;
 let userLocation = null;
-let deferredPrompt = null;
 
 const centerCoords = document.getElementById("centerCoords");
 const radiusDisplay = document.getElementById("radiusDisplay");
@@ -19,27 +18,25 @@ map = L.map("map", { zoomControl: true }).setView([39.8283, -98.5795], 4);
 
 const roadMap = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap"
-  }
+  { maxZoom: 19, attribution: "&copy; OpenStreetMap" }
 );
 
-const satelliteMap = L.tileLayer(
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-  {
-    attribution: "Esri"
-  }
+const satelliteBase = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
 );
+
+const satelliteLabels = L.tileLayer(
+  "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+);
+
+const satelliteMap = L.layerGroup([
+  satelliteBase,
+  satelliteLabels
+]);
 
 roadMap.addTo(map);
 
-const truckStopsLayer = L.layerGroup();
-const restAreasLayer = L.layerGroup();
-const truckParkingLayer = L.layerGroup();
-const walmartLayer = L.layerGroup();
-const weighStationLayer = L.layerGroup();
-const catScaleLayer = L.layerGroup();
+const lovesLayer = L.layerGroup().addTo(map);
 
 L.control.layers(
   {
@@ -47,12 +44,7 @@ L.control.layers(
     "Satellite": satelliteMap
   },
   {
-    "Truck Stops": truckStopsLayer,
-    "Rest Areas": restAreasLayer,
-    "Truck Parking": truckParkingLayer,
-    "Walmart": walmartLayer,
-    "Weigh Stations": weighStationLayer,
-    "CAT Scales": catScaleLayer
+    "Love's": lovesLayer
   }
 ).addTo(map);
 
@@ -69,28 +61,6 @@ function getRadiusMiles() {
     : parseFloat(radiusSelect.value);
 }
 
-function drawRadius(lat, lng) {
-  const radiusMeters = getRadiusMiles() * METERS_PER_MILE;
-
-  if (centerMarker) map.removeLayer(centerMarker);
-  if (radiusCircle) map.removeLayer(radiusCircle);
-
-  centerMarker = L.marker([lat, lng]).addTo(map);
-
-  radiusCircle = L.circle([lat, lng], {
-    radius: radiusMeters,
-    color: "#3ee9c5",
-    fillColor: "#3ee9c5",
-    fillOpacity: 0.08,
-    weight: 3
-  }).addTo(map);
-
-  centerCoords.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  radiusDisplay.textContent = `${getRadiusMiles()} Miles`;
-
-  updateDistance(lat, lng);
-}
-
 function updateDistance(lat, lng) {
   if (!userLocation) {
     distanceDisplay.textContent = "GPS unavailable";
@@ -104,25 +74,78 @@ function updateDistance(lat, lng) {
   distanceDisplay.textContent = `${miles.toFixed(1)} mi`;
 }
 
+async function loadLoves(centerLat, centerLng, radiusMeters) {
+  lovesLayer.clearLayers();
+
+  const response = await fetch("./data/loves_locations_lite.json");
+  const stores = await response.json();
+
+  stores.forEach(store => {
+    if (
+      centerLat &&
+      centerLng &&
+      radiusMeters
+    ) {
+      const distance = map.distance(
+        [centerLat, centerLng],
+        [store.lat, store.lng]
+      );
+
+      if (distance > radiusMeters) return;
+    }
+
+    L.marker([store.lat, store.lng])
+      .bindPopup(`
+        <div>
+          <b>${store.city}, ${store.state}</b><br>
+          ${store.address || ""}<br>
+          Store #${store.id || ""}
+        </div>
+      `)
+      .addTo(lovesLayer);
+  });
+}
+
+async function drawRadius(lat, lng) {
+  const radiusMeters = getRadiusMiles() * METERS_PER_MILE;
+
+  if (centerMarker) map.removeLayer(centerMarker);
+  if (radiusCircle) map.removeLayer(radiusCircle);
+
+  centerMarker = L.marker([lat, lng]).addTo(map);
+
+  radiusCircle = L.circle([lat, lng], {
+    radius: radiusMeters,
+    color: "#37F5D6",
+    weight: 4,
+    fillColor: "#37F5D6",
+    fillOpacity: 0.05,
+    dashArray: "12 10"
+  }).addTo(map);
+
+  centerCoords.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  radiusDisplay.textContent = `${getRadiusMiles()} Miles`;
+
+  updateDistance(lat, lng);
+
+  await loadLoves(lat, lng, radiusMeters);
+}
+
 function locateUser() {
-  if (!navigator.geolocation) return;
-
-  locateBtn.textContent = "Locating...";
-
   navigator.geolocation.getCurrentPosition(
-    position => {
+    async position => {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
 
       userLocation = { lat, lng };
 
       map.setView([lat, lng], 9);
-      drawRadius(lat, lng);
+
+      await drawRadius(lat, lng);
 
       locateBtn.textContent = "📍 My Location";
     },
     () => {
-      locateBtn.textContent = "📍 My Location";
       alert("Unable to get GPS location.");
     },
     {
@@ -132,106 +155,6 @@ function locateUser() {
     }
   );
 }
-
-async function overpass(query) {
-  const url =
-    "https://overpass-api.de/api/interpreter?data=" +
-    encodeURIComponent(query);
-
-  const response = await fetch(url);
-  return await response.json();
-}
-
-async function loadTruckStops() {
-  truckStopsLayer.clearLayers();
-
-  const b = map.getBounds();
-
-  const query = `[out:json];
-node["amenity"="fuel"]["hgv"="yes"]
-(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});
-out;`;
-
-  const data = await overpass(query);
-
-  data.elements.forEach(item => {
-    L.marker([item.lat, item.lon])
-      .bindPopup(item.tags?.name || "Truck Stop")
-      .addTo(truckStopsLayer);
-  });
-}
-
-async function loadRestAreas() {
-  restAreasLayer.clearLayers();
-
-  const b = map.getBounds();
-
-  const query = `[out:json];
-node["highway"="rest_area"]
-(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});
-out;`;
-
-  const data = await overpass(query);
-
-  data.elements.forEach(item => {
-    L.marker([item.lat, item.lon])
-      .bindPopup(item.tags?.name || "Rest Area")
-      .addTo(restAreasLayer);
-  });
-}
-
-async function loadTruckParking() {
-  truckParkingLayer.clearLayers();
-
-  const b = map.getBounds();
-
-  const query = `[out:json];
-node["amenity"="parking"]["hgv"="yes"]
-(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});
-out;`;
-
-  const data = await overpass(query);
-
-  data.elements.forEach(item => {
-    L.marker([item.lat, item.lon])
-      .bindPopup(item.tags?.name || "Truck Parking")
-      .addTo(truckParkingLayer);
-  });
-}
-
-async function loadWalmarts() {
-  walmartLayer.clearLayers();
-
-  const b = map.getBounds();
-
-  const query = `[out:json];
-node["brand"="Walmart"]
-(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});
-out;`;
-
-  const data = await overpass(query);
-
-  data.elements.forEach(item => {
-    L.marker([item.lat, item.lon])
-      .bindPopup(item.tags?.name || "Walmart")
-      .addTo(walmartLayer);
-  });
-}
-
-let lastLoad = 0;
-
-map.on("moveend", () => {
-  const now = Date.now();
-
-  if (now - lastLoad < 5000) return;
-
-  lastLoad = now;
-
-  loadTruckStops().catch(console.error);
-  loadRestAreas().catch(console.error);
-  loadTruckParking().catch(console.error);
-  loadWalmarts().catch(console.error);
-});
 
 map.on("click", e => {
   drawRadius(e.latlng.lat, e.latlng.lng);
@@ -254,11 +177,6 @@ customRadius.addEventListener("input", () => {
 });
 
 locateBtn.addEventListener("click", locateUser);
-
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  deferredPrompt = e;
-});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
