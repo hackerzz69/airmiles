@@ -2,67 +2,55 @@
 <html lang="en">
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-    <title>Air Mile Radius Pro</title>
+<title>Air Mile Radius Pro</title>
 
-    <meta
-        name="theme-color"
-        content="#37F5D6"
-    >
+<meta
+    name="theme-color"
+    content="#37F5D6"
+>
 
-    <meta
-        name="description"
-        content="FMCSA Air Mile Radius Tool"
-    >
+<meta
+    name="description"
+    content="FMCSA Air Mile Radius Tool"
+>
 
-    <link
-        rel="manifest"
-        href="manifest.json"
-    >
+<link
+    rel="manifest"
+    href="manifest.json"
+>
 
-    <link
-        rel="apple-touch-icon"
-        href="icons/icon-192.png"
-    >
+<link
+    rel="apple-touch-icon"
+    href="icons/icon-192.png"
+>
 
-    <meta
-        name="apple-mobile-web-app-capable"
-        content="yes"
-    >
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+>
 
-    <meta
-        name="apple-mobile-web-app-status-bar-style"
-        content="black-translucent"
-    >
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+>
 
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+<link
+    rel="stylesheet"
+    href="style.css"
+>
 
 </head>
 
 <body>
 
 <div id="app">
-
-    <!-- HEADER -->
 
     <header class="topbar">
 
@@ -75,8 +63,6 @@
         </p>
 
     </header>
-
-    <!-- MAIN CONTROL CARD -->
 
     <section class="control-card">
 
@@ -93,10 +79,7 @@
                 100 Air Miles
             </option>
 
-            <option
-                value="150"
-                selected
-            >
+            <option value="150" selected>
                 150 Air Miles
             </option>
 
@@ -114,14 +97,12 @@
             type="number"
             id="customRadius"
             placeholder="Custom Radius"
-            min="1"
-            max="1000"
             hidden
         >
 
     </section>
 
-    <!-- STATS -->
+    <div id="map"></div>
 
     <section class="stats-grid">
 
@@ -165,8 +146,6 @@
 
     </section>
 
-    <!-- CENTER CARD -->
-
     <section class="info-card">
 
         <div class="info-row">
@@ -175,69 +154,13 @@
                 Radius Center
             </span>
 
-            <strong
-                id="centerCoords"
-            >
+            <strong id="centerCoords">
                 Waiting for GPS...
             </strong>
 
         </div>
 
     </section>
-
-    <!-- RESULTS CARD -->
-
-    <section class="info-card">
-
-        <div class="info-row">
-
-            <span>
-                Love's In Radius
-            </span>
-
-            <strong
-                id="storeCount"
-            >
-                0
-            </strong>
-
-        </div>
-
-        <div class="info-row">
-
-            <span>
-                CAT Scales
-            </span>
-
-            <strong
-                id="catCount"
-            >
-                0
-            </strong>
-
-        </div>
-
-        <div class="info-row">
-
-            <span>
-                Parking Spaces
-            </span>
-
-            <strong
-                id="parkingCount"
-            >
-                0
-            </strong>
-
-        </div>
-
-    </section>
-
-    <!-- MAP -->
-
-    <div id="map"></div>
-
-    <!-- FOOTER -->
 
     <footer class="footer">
 
@@ -247,18 +170,11 @@
 
 </div>
 
-<script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script
-    src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js">
-</script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-<script
-    defer
-    src="app.js">
-</script>
+<script defer src="app.js"></script>
 
 </body>
 </html>
