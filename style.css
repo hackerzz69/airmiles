@@ -1,19 +1,14 @@
 :root{
 
     --bg:#020817;
-
     --panel:#071329;
-
     --panel2:#16233f;
 
     --text:#f8fafc;
-
     --muted:#94a3b8;
 
     --accent:#37F5D6;
-
     --accent-hover:#4ff8dd;
-
     --accent-dark:#14b8a6;
 
     --border:rgba(55,245,214,.15);
@@ -88,13 +83,13 @@ body{
 
 .topbar h1{
 
-    font-size:2rem;
+    font-size:2.2rem;
 
     font-weight:800;
 
     letter-spacing:-1px;
 
-    line-height:1.1;
+    line-height:1;
 }
 
 .topbar p{
@@ -107,16 +102,10 @@ body{
 }
 
 /* =====================================
-   CONTROLS CARD
+   CONTROL CARD
 ===================================== */
 
-.controls{
-
-    display:flex;
-
-    gap:12px;
-
-    flex-wrap:wrap;
+.control-card{
 
     margin:16px;
 
@@ -129,10 +118,39 @@ body{
     border:
         1px solid var(--border);
 
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
     box-shadow:
         0 0 35px rgba(55,245,214,.05);
+}
 
-    z-index:1000;
+/* backwards compatibility */
+
+.controls{
+
+    margin:16px;
+
+    padding:18px;
+
+    background:var(--panel);
+
+    border-radius:var(--radius);
+
+    border:
+        1px solid var(--border);
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+    box-shadow:
+        0 0 35px rgba(55,245,214,.05);
 }
 
 /* =====================================
@@ -196,7 +214,7 @@ input{
 
     font-size:1rem;
 
-    flex:1;
+    width:100%;
 }
 
 input::placeholder{
@@ -211,6 +229,69 @@ select:focus{
 
     box-shadow:
         0 0 0 2px rgba(55,245,214,.4);
+}
+
+/* =====================================
+   STATS GRID
+===================================== */
+
+.stats-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(2,1fr);
+
+    gap:16px;
+
+    margin:
+        0 16px 16px;
+}
+
+.stat-card{
+
+    background:var(--panel);
+
+    border-radius:var(--radius);
+
+    border:
+        1px solid var(--border);
+
+    padding:20px;
+
+    text-align:center;
+
+    box-shadow:
+        0 0 30px rgba(55,245,214,.06);
+}
+
+.stat-label{
+
+    color:var(--muted);
+
+    font-size:.9rem;
+
+    margin-bottom:10px;
+}
+
+.stat-value{
+
+    color:var(--accent);
+
+    font-size:2.8rem;
+
+    font-weight:800;
+
+    line-height:1;
+}
+
+.stat-unit{
+
+    color:var(--muted);
+
+    margin-top:8px;
+
+    font-size:.85rem;
 }
 
 /* =====================================
@@ -283,15 +364,15 @@ select:focus{
     margin:
         0 16px 16px;
 
-    border-radius:var(--radius);
+    border-radius:32px;
 
     overflow:hidden;
 
     border:
-        1px solid var(--border);
+        1px solid rgba(55,245,214,.15);
 
     box-shadow:
-        0 0 35px rgba(55,245,214,.05);
+        0 0 40px rgba(55,245,214,.08);
 }
 
 /* =====================================
@@ -364,9 +445,11 @@ select:focus{
 
 .leaflet-popup-content{
 
-    margin:14px 16px;
+    margin:16px 18px;
 
     font-size:.95rem;
+
+    min-width:220px;
 }
 
 .leaflet-control-layers{
@@ -379,6 +462,45 @@ select:focus{
 .leaflet-control-layers label{
 
     color:white !important;
+}
+
+/* =====================================
+   STORE POPUP
+===================================== */
+
+.store-popup{
+
+    min-width:220px;
+}
+
+.store-popup h3{
+
+    color:var(--accent);
+
+    margin-bottom:8px;
+
+    font-size:1.15rem;
+}
+
+.store-address{
+
+    color:#cbd5e1;
+
+    margin-bottom:10px;
+}
+
+.store-stat{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin:4px 0;
+}
+
+.store-stat span:first-child{
+
+    color:#94a3b8;
 }
 
 /* =====================================
@@ -431,31 +553,6 @@ select:focus{
 }
 
 /* =====================================
-   LOVE'S POPUP
-===================================== */
-
-.store-popup{
-
-    min-width:220px;
-}
-
-.store-popup h3{
-
-    margin-bottom:8px;
-
-    color:var(--accent);
-
-    font-size:1.1rem;
-}
-
-.store-popup p{
-
-    margin:4px 0;
-
-    color:#cbd5e1;
-}
-
-/* =====================================
    SCROLLBAR
 ===================================== */
 
@@ -497,9 +594,9 @@ select:focus{
         font-size:1.7rem;
     }
 
-    .controls{
+    .stats-grid{
 
-        flex-direction:column;
+        grid-template-columns:1fr;
     }
 
     .primary-btn,
