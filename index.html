@@ -1,119 +1,264 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>Air Mile Radius Pro</title>
 
-    <meta name="theme-color" content="#c62828">
-    <meta name="description" content="Professional Air Mile Radius Tool for Truck Drivers">
+    <meta
+        name="theme-color"
+        content="#37F5D6"
+    >
 
-    <link rel="manifest" href="manifest.json">
+    <meta
+        name="description"
+        content="FMCSA Air Mile Radius Tool"
+    >
+
+    <link
+        rel="manifest"
+        href="manifest.json"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        href="icons/icon-192.png"
+    >
+
+    <meta
+        name="apple-mobile-web-app-capable"
+        content="yes"
+    >
+
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+    >
 
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    >
 
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
-    />
+    >
 
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
-    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-    <div id="app">
+<div id="app">
 
-        <!-- Header -->
+    <!-- HEADER -->
 
-        <header class="topbar">
-            <div>
-                <h1>🚛 Air Mile Radius Pro</h1>
-                <p>FMCSA Ag Exemption Radius Tool</p>
+    <header class="topbar">
+
+        <h1>
+            🚛 Air Mile Radius Pro
+        </h1>
+
+        <p>
+            FMCSA Ag Exemption Radius Tool
+        </p>
+
+    </header>
+
+    <!-- MAIN CONTROL CARD -->
+
+    <section class="control-card">
+
+        <button
+            id="locateBtn"
+            class="primary-btn"
+        >
+            📍 My Location
+        </button>
+
+        <select id="radiusSelect">
+
+            <option value="100">
+                100 Air Miles
+            </option>
+
+            <option
+                value="150"
+                selected
+            >
+                150 Air Miles
+            </option>
+
+            <option value="172.6">
+                172.6 Statute Miles
+            </option>
+
+            <option value="custom">
+                Custom Radius
+            </option>
+
+        </select>
+
+        <input
+            type="number"
+            id="customRadius"
+            placeholder="Custom Radius"
+            min="1"
+            max="1000"
+            hidden
+        >
+
+    </section>
+
+    <!-- STATS -->
+
+    <section class="stats-grid">
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Radius
             </div>
-        </header>
 
-        <!-- Controls -->
-
-        <section class="controls">
-
-            <button id="locateBtn" class="primary-btn">
-                📍 My Location
-            </button>
-
-            <select id="radiusSelect">
-                <option value="100">
-                    100 Air Miles
-                </option>
-
-                <option value="150" selected>
-                    150 Air Miles
-                </option>
-
-                <option value="172.6">
-                    172.6 Statute Miles
-                </option>
-
-                <option value="custom">
-                    Custom Radius
-                </option>
-            </select>
-
-            <input
-                type="number"
-                id="customRadius"
-                placeholder="Enter Miles"
-                min="1"
-                max="1000"
-                hidden
-            />
-
-        </section>
-
-        <!-- Info Panel -->
-
-        <section class="info-card">
-
-            <div class="info-row">
-                <span>Center:</span>
-                <span id="centerCoords">Waiting for GPS...</span>
+            <div
+                class="stat-value"
+                id="radiusDisplay"
+            >
+                150
             </div>
 
-            <div class="info-row">
-                <span>Radius:</span>
-                <span id="radiusDisplay">150 Air Miles</span>
+            <div class="stat-unit">
+                Air Miles
             </div>
 
-            <div class="info-row">
-                <span>Distance:</span>
-                <span id="distanceDisplay">0 mi</span>
+        </div>
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Distance
             </div>
 
-        </section>
+            <div
+                class="stat-value"
+                id="distanceDisplay"
+            >
+                0.0
+            </div>
 
-        <!-- Map -->
+            <div class="stat-unit">
+                Miles
+            </div>
 
-        <div id="map"></div>
+        </div>
 
-        <!-- Footer -->
+    </section>
 
-        <footer class="footer">
-            Tap anywhere on the map to move the center point.
-        </footer>
+    <!-- CENTER CARD -->
 
-    </div>
+    <section class="info-card">
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <div class="info-row">
 
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+            <span>
+                Radius Center
+            </span>
 
-    <script defer src="app.js"></script>
+            <strong
+                id="centerCoords"
+            >
+                Waiting for GPS...
+            </strong>
+
+        </div>
+
+    </section>
+
+    <!-- RESULTS CARD -->
+
+    <section class="info-card">
+
+        <div class="info-row">
+
+            <span>
+                Love's In Radius
+            </span>
+
+            <strong
+                id="storeCount"
+            >
+                0
+            </strong>
+
+        </div>
+
+        <div class="info-row">
+
+            <span>
+                CAT Scales
+            </span>
+
+            <strong
+                id="catCount"
+            >
+                0
+            </strong>
+
+        </div>
+
+        <div class="info-row">
+
+            <span>
+                Parking Spaces
+            </span>
+
+            <strong
+                id="parkingCount"
+            >
+                0
+            </strong>
+
+        </div>
+
+    </section>
+
+    <!-- MAP -->
+
+    <div id="map"></div>
+
+    <!-- FOOTER -->
+
+    <footer class="footer">
+
+        Tap anywhere on the map to move the center point.
+
+    </footer>
+
+</div>
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script
+    src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js">
+</script>
+
+<script
+    defer
+    src="app.js">
+</script>
 
 </body>
 </html>
